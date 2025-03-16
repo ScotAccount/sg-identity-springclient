@@ -1,0 +1,3 @@
+# PEM files (encryption keys and certificates)
+*.pem
+**/*.pem 

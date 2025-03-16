@@ -1,0 +1,101 @@
+@startuml Token Validation and Claims Processing
+
+participant "LoggedInController" as Controller
+participant "JwtDecoder" as Decoder
+participant "JWKS Endpoint" as JWKS
+participant "Session" as Session
+database "Logging System" as Logger
+
+== Access Token Processing ==
+[-> Controller: onAuthenticationSuccess()
+activate Controller
+
+Controller -> Controller: Extract access token
+alt Successful Access Token Extraction
+    Controller -> Decoder: decode(accessToken)
+    activate Decoder
+    
+    Decoder -> JWKS: Fetch public keys
+    activate JWKS
+    JWKS --> Decoder: Return JWK set
+    deactivate JWKS
+    
+    alt Valid Token Structure
+        Decoder -> Decoder: Verify token signature
+        alt Valid Signature
+            Decoder -> Decoder: Parse claims
+            Decoder --> Controller: Return decoded JWT
+            Controller -> Logger: Log success
+            Controller -> Session: Store access token claims
+        else Invalid Signature
+            Decoder --> Controller: Throw JwtValidationException
+            Controller -> Logger: Log signature error
+            Controller -> Session: Store error details
+        end
+    else Invalid Token Structure
+        Decoder --> Controller: Throw JwtException
+        Controller -> Logger: Log malformed token
+        Controller -> Session: Store error details
+    end
+    deactivate Decoder
+else Token Extraction Failed
+    Controller -> Logger: Log missing token
+    Controller -> Session: Store error details
+end
+
+== ID Token Processing ==
+Controller -> Controller: Extract ID token
+alt Successful ID Token Extraction
+    Controller -> Decoder: decode(idToken)
+    activate Decoder
+    
+    alt Valid Token Structure
+        Decoder -> Decoder: Verify token signature
+        alt Valid Signature
+            Decoder -> Decoder: Validate claims
+            note right
+                Validate:
+                - iss (issuer)
+                - aud (audience)
+                - exp (expiration)
+                - iat (issued at)
+                - sub (subject)
+            end note
+            
+            alt Valid Claims
+                Decoder --> Controller: Return decoded JWT
+                Controller -> Logger: Log success
+                Controller -> Session: Store ID token claims
+            else Invalid Claims
+                Decoder --> Controller: Throw JwtValidationException
+                Controller -> Logger: Log claims validation error
+                Controller -> Session: Store error details
+            end
+        else Invalid Signature
+            Decoder --> Controller: Throw JwtValidationException
+            Controller -> Logger: Log signature error
+            Controller -> Session: Store error details
+        end
+    else Invalid Token Structure
+        Decoder --> Controller: Throw JwtException
+        Controller -> Logger: Log malformed token
+        Controller -> Session: Store error details
+    end
+    deactivate Decoder
+else Token Extraction Failed
+    Controller -> Logger: Log missing token
+    Controller -> Session: Store error details
+end
+
+== Final Processing ==
+alt All Validations Successful
+    Controller -> Session: Store user info
+    [<-- Controller: Redirect to home
+else Validation Errors
+    Controller -> Session: Store error summary
+    [<-- Controller: Redirect to error page
+end
+
+deactivate Controller
+
+@enduml 
