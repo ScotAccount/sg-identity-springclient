@@ -144,6 +144,9 @@ public class SecurityConfig {
                                 }))
                         .successHandler(loggedInController)
                         .failureHandler(loggedInController))
+                .logout(logout -> logout
+                        .logoutSuccessUrl("/")
+                        .permitAll())
                 .csrf(csrf -> csrf.disable());
 
         return http.build();
