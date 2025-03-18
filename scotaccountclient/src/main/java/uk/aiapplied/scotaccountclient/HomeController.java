@@ -1,15 +1,18 @@
 package uk.aiapplied.scotaccountclient;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
+
+import java.util.Map;
 
 /**
  * Controller handling the home page and user authentication status.
@@ -19,6 +22,13 @@ import jakarta.servlet.http.HttpSession;
 public class HomeController {
     /** Logger instance for this class */
     private static final Logger logger = LoggerFactory.getLogger(HomeController.class);
+    private final OAuth2AuthorizedClientService authorizedClientService;
+    private final AttributeService attributeService;
+
+    public HomeController(OAuth2AuthorizedClientService authorizedClientService, AttributeService attributeService) {
+        this.authorizedClientService = authorizedClientService;
+        this.attributeService = attributeService;
+    }
 
     /**
      * Handles requests to the home page.
@@ -29,37 +39,29 @@ public class HomeController {
      */
     @GetMapping("/")
     public String home(Model model, HttpServletRequest request) {
-        HttpSession session = request.getSession();
+        Authentication authentication = (Authentication) request.getUserPrincipal();
+        
+        if (authentication != null && authentication.isAuthenticated() && authentication instanceof OAuth2AuthenticationToken) {
+            OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
+            OAuth2AuthorizedClient client = authorizedClientService.loadAuthorizedClient(
+                oauthToken.getAuthorizedClientRegistrationId(),
+                oauthToken.getName()
+            );
 
-        // Check for authentication errors
-        String authError = (String) session.getAttribute("auth_error");
-        String authErrorType = (String) session.getAttribute("auth_error_type");
-        String tokenError = (String) session.getAttribute("token_error");
-
-        if (authError != null || authErrorType != null || tokenError != null) {
-            model.addAttribute("error", true);
-            model.addAttribute("errorMessage", authError);
-            model.addAttribute("errorType", authErrorType);
-            model.addAttribute("tokenError", tokenError);
-            // Clear the error attributes after reading them
-            session.removeAttribute("auth_error");
-            session.removeAttribute("auth_error_type");
-            session.removeAttribute("token_error");
-        }
-
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof OidcUser) {
-            OidcUser oidcUser = (OidcUser) authentication.getPrincipal();
-            logger.info("User is authenticated: {}", oidcUser.getSubject());
-            model.addAttribute("authenticated", true);
-            model.addAttribute("userInfo", oidcUser.getUserInfo());
-            model.addAttribute("idToken", oidcUser.getIdToken().getTokenValue());
-            model.addAttribute("tokenClaims", session.getAttribute("token_claims"));
-            model.addAttribute("accessToken", session.getAttribute("access_token"));
+            if (client != null) {
+                OAuth2AccessToken accessToken = client.getAccessToken();
+                Map<String, Object> attributes = attributeService.fetchAttributes(accessToken.getTokenValue());
+                
+                if (attributes != null) {
+                    model.addAttribute("verifiedClaims", attributes.get("verified_claims"));
+                }
+            }
+            
+            logger.info("User is authenticated: {}", authentication.getName());
         } else {
             logger.info("No authenticated user");
-            model.addAttribute("authenticated", false);
         }
+        
         return "home";
     }
 }

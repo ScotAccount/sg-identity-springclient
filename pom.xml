@@ -13,7 +13,6 @@
     <description>Parent POM for ScotAccount project</description>
 
     <modules>
-        <module>scotaccount-jwt</module>
         <module>scotaccountclient</module>
     </modules>
 

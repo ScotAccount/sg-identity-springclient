@@ -2,16 +2,12 @@ package uk.aiapplied.scotaccountclient;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.ComponentScan;
 
 /**
  * Main application class for the ScotAccount Client.
- * This class initializes the Spring Boot application and configures component
- * scanning
- * to include both the client and JWT modules.
+ * This class initializes the Spring Boot application.
  */
 @SpringBootApplication
-@ComponentScan(basePackages = { "uk.aiapplied.scotaccountclient", "uk.aiapplied.scotaccount.jwt" })
 public class ScotaccountClientApplication {
 
 	/**

@@ -4,15 +4,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestCustomizers;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestCustomizers;
-import uk.aiapplied.scotaccount.jwt.JwtUtil;
+import uk.aiapplied.scotaccountclient.JwtUtil;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -117,37 +118,29 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(
-                                "/",
-                                "/login",
-                                "/oauth2/authorization/**",
-                                "/login/oauth2/code/**",
-                                "/error",
-                                "/webjars/**",
-                                "/css/**",
-                                "/js/**")
-                        .permitAll()
-                        .anyRequest().authenticated())
-                .oauth2Login(oauth2 -> oauth2
-                        .authorizationEndpoint(authorizationEndpoint -> authorizationEndpoint
-                                .authorizationRequestResolver(
-                                        authorizationRequestResolver(clientRegistrationRepository))
-                                .baseUri("/oauth2/authorization"))
-                        .tokenEndpoint(tokenEndpoint -> tokenEndpoint
-                                .accessTokenResponseClient(customAccessTokenResponseClient()))
-                        .userInfoEndpoint(userInfo -> userInfo
-                                .oidcUserService(oidcUserRequest -> {
-                                    Collection<GrantedAuthority> authorities = Collections
-                                            .singletonList(new SimpleGrantedAuthority("ROLE_USER"));
-                                    return new DefaultOidcUser(authorities, oidcUserRequest.getIdToken());
-                                }))
-                        .successHandler(loggedInController)
-                        .failureHandler(loggedInController))
-                .logout(logout -> logout
-                        .logoutSuccessUrl("/")
-                        .permitAll())
-                .csrf(csrf -> csrf.disable());
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/", "/error", "/webjars/**", "/css/**", "/js/**", "/images/**").permitAll()
+                .anyRequest().authenticated()
+            )
+            .oauth2Login(oauth2 -> oauth2
+                .authorizationEndpoint(authorization -> authorization
+                    .authorizationRequestResolver(this.authorizationRequestResolver(clientRegistrationRepository))
+                )
+                .tokenEndpoint(token -> token
+                    .accessTokenResponseClient(this.customAccessTokenResponseClient())
+                )
+            )
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.ALWAYS)
+                .maximumSessions(1)
+                .expiredUrl("/")
+            )
+            .logout(logout -> logout
+                .logoutUrl("/logout")
+                .logoutSuccessUrl("/")
+                .permitAll()
+            );
 
         return http.build();
     }

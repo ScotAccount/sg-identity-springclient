@@ -1,7 +1,7 @@
 ### Security ###
-# PEM files (encryption keys and certificates)
-*.pem
-**/*.pem
+# Keep keys directory structure but ignore PEM files
+src/main/resources/keys/**/**.pem
+!src/main/resources/keys/.gitkeep
 
 ### Maven ###
 target/

@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ScotAccount Demo - mygov.scot</title>
-    <link href="https://www.gov.scot/assets/css/main.css" rel="stylesheet">
+    <title>ScotAccount Client</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -114,16 +114,32 @@
             margin: 0;
             font-weight: 400;
         }
-        p {
-            font-size: 16px;
-            line-height: 1.6;
+        .verified-claims {
+            margin-top: 32px;
+            padding: 24px;
+            background: #f0f7fc;
+            border: 1px solid #0065bd;
+            border-radius: 4px;
+        }
+        .verified-claims h3 {
+            color: #0065bd;
             margin-bottom: 16px;
         }
-        h2 {
-            font-size: 28px;
-            line-height: 1.2;
+        .claim-section {
             margin-bottom: 24px;
-            color: #333333;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #d9d9d9;
+        }
+        .claim-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .verification-info {
+            background: #e6f0f7;
+            padding: 12px;
+            margin-bottom: 16px;
+            border-radius: 4px;
         }
     </style>
   </head>
@@ -131,19 +147,11 @@
     <header class="ds_site-header">
         <div class="ds_wrapper">
             <div class="ds_site-header__content">
-                <h1 class="ds_site-header__title">ScotAccount Demo</h1>
+                <h1 class="ds_site-header__title">ScotAccount Client</h1>
                 <div class="ds_site-header__auth">
-                    <div sec:authorize="isAuthenticated()">
-                        <p class="ds_site-header__user">Welcome, <strong th:text="${userName}">User</strong></p>
-                    </div>
-                    <div sec:authorize="!isAuthenticated()">
-                        <a th:href="@{/oauth2/authorization/scotaccount}" class="ds_button ds_button--white">Sign in with ScotAccount</a>
-                    </div>
-                    <div sec:authorize="isAuthenticated()">
-                        <form th:action="@{/logout}" method="post" style="margin: 0;">
-                            <button type="submit" class="ds_button ds_button--white">Sign Out</button>
-                        </form>
-                    </div>
+                    <p class="ds_site-header__user" sec:authorize="isAuthenticated()">
+                        Welcome, <span sec:authentication="principal.attributes['sub']"></span>
+                    </p>
                 </div>
             </div>
         </div>
@@ -151,43 +159,83 @@
 
     <main class="ds_layout__content">
         <div class="ds_wrapper">
-            <div sec:authorize="isAuthenticated()" class="user-status">
-                <div class="user-info">
-                    <h3>Your ScotAccount Information</h3>
-                    <dl>
-                        <dt>Email:</dt>
-                        <dd th:text="${userEmail}">email@example.com</dd>
-                        
-                        <dt>User Claims:</dt>
-                        <dd>
-                            <dl th:each="claim : ${userInfo}">
-                                <dt th:text="${claim.key}">claim</dt>
-                                <dd th:text="${claim.value}">value</dd>
-                            </dl>
-                        </dd>
+            <div class="user-status">
+                <div sec:authorize="isAuthenticated()">
+                    <h2>Your Account Information</h2>
+                    <div class="user-info">
+                        <dl>
+                            <dt>User ID:</dt>
+                            <dd sec:text="${#authentication.principal.attributes['sub']}"></dd>
+                            <dt>Email:</dt>
+                            <dd sec:text="${#authentication.principal.attributes['email']}"></dd>
+                            <dt>Name:</dt>
+                            <dd sec:text="${#authentication.principal.attributes['name']}"></dd>
+                        </dl>
+                    </div>
 
-                        <dt>Access Token Claims:</dt>
-                        <dd>
-                            <dl th:each="claim : ${session.access_token_claims}">
-                                <dt th:text="${claim.key}">claim</dt>
-                                <dd th:text="${claim.value}">value</dd>
-                            </dl>
-                        </dd>
+                    <div class="verified-claims" th:if="${verifiedClaims != null}">
+                        <h3>Verified Claims</h3>
+                        <div class="claim-section" th:each="claim : ${verifiedClaims}">
+                            <h4 th:text="${claim.scope}"></h4>
+                            
+                            <div class="verification-info">
+                                <strong>Verification Details:</strong>
+                                <dl>
+                                    <dt>Outcome:</dt>
+                                    <dd th:text="${claim.verification.outcome}"></dd>
+                                    <dt>Trust Framework:</dt>
+                                    <dd th:text="${claim.verification.trust_framework}"></dd>
+                                    <dt>Time:</dt>
+                                    <dd th:text="${claim.verification.time}"></dd>
+                                </dl>
+                            </div>
 
-                        <dt>ID Token Claims:</dt>
-                        <dd>
-                            <dl th:each="claim : ${session.id_token_claims}">
-                                <dt th:text="${claim.key}">claim</dt>
-                                <dd th:text="${claim.value}">value</dd>
-                            </dl>
-                        </dd>
-                    </dl>
+                            <div th:if="${claim.claims != null}">
+                                <div th:if="${claim.scope == 'scotaccount.gpg45.medium'}">
+                                    <dl>
+                                        <dt>Given Name:</dt>
+                                        <dd th:text="${claim.claims.given_name}"></dd>
+                                        <dt>Family Name:</dt>
+                                        <dd th:text="${claim.claims.family_name}"></dd>
+                                        <dt>Birth Date:</dt>
+                                        <dd th:text="${claim.claims.birth_date}"></dd>
+                                    </dl>
+                                </div>
+                                
+                                <div th:if="${claim.scope == 'scotaccount.email'}">
+                                    <dl>
+                                        <dt>Email:</dt>
+                                        <dd th:text="${claim.claims.email}"></dd>
+                                    </dl>
+                                </div>
+                                
+                                <div th:if="${claim.scope == 'scotaccount.address'}">
+                                    <dl>
+                                        <dt>UPRN:</dt>
+                                        <dd th:text="${claim.claims.address.uprn}"></dd>
+                                        <dt>Building Number:</dt>
+                                        <dd th:text="${claim.claims.address.buildingNumber}"></dd>
+                                        <dt>Street Name:</dt>
+                                        <dd th:text="${claim.claims.address.streetName}"></dd>
+                                        <dt>Locality:</dt>
+                                        <dd th:text="${claim.claims.address.addressLocality}"></dd>
+                                        <dt>Postal Code:</dt>
+                                        <dd th:text="${claim.claims.address.postalCode}"></dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form th:action="@{/logout}" method="get" style="margin-top: 24px;">
+                        <button type="submit" class="ds_button ds_button--white">Logout</button>
+                    </form>
                 </div>
-            </div>
-
-            <div sec:authorize="!isAuthenticated()">
-                <h2>Welcome to the ScotAccount Demo</h2>
-                <p>This is a demonstration of the ScotAccount authentication service.</p>
+                <div sec:authorize="!isAuthenticated()">
+                    <h2>Welcome to ScotAccount</h2>
+                    <p>Please log in to access your account information.</p>
+                    <a th:href="@{/oauth2/authorization/scotaccount}" class="ds_button">Login with ScotAccount</a>
+                </div>
             </div>
         </div>
     </main>

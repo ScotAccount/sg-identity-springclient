@@ -1,4 +1,4 @@
-package uk.aiapplied.scotaccount.jwt;
+package uk.aiapplied.scotaccountclient;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
@@ -222,4 +222,4 @@ public class JwtUtil {
                 .parseClaimsJws(jwt)
                 .getBody();
     }
-}
+} 
