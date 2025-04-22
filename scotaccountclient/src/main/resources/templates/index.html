@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ScotAccount Client</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --scot-gov-blue: #0065bd;
+            --scot-gov-dark-blue: #003f73;
+            --scot-gov-light-blue: #f0f7fc;
+            --scot-gov-text: #333333;
+            --scot-gov-border: #d9d9d9;
+            --scot-gov-success: #28a745;
+            --scot-gov-background: #f8f8f8;
+        }
+
+        body {
+            font-family: 'Open Sans', sans-serif;
+            font-weight: 400;
+            line-height: 1.5;
+            color: var(--scot-gov-text);
+            margin: 0;
+            padding: 0;
+            background-color: var(--scot-gov-background);
+        }
+
+        h1, h2, h3, h4, h5 {
+            font-family: 'Open Sans', sans-serif;
+            font-weight: 700;
+            margin-top: 0;
+        }
+
+        .ds_site-header {
+            background: var(--scot-gov-blue);
+            padding: 16px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .ds_site-header__content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .ds_site-header__title {
+            color: white;
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0;
+            text-decoration: none;
+        }
+
+        .ds_site-header__auth {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .ds_site-header__user {
+            color: white;
+            font-size: 16px;
+            margin: 0;
+        }
+
+        .ds_wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .ds_layout__content {
+            padding: 32px 0;
+        }
+
+        .ds_button {
+            background: var(--scot-gov-blue);
+            border: 0;
+            border-radius: 4px;
+            color: #ffffff;
+            cursor: pointer;
+            display: inline-block;
+            font-family: 'Open Sans', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 24px;
+            padding: 12px 24px;
+            text-align: center;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+
+        .ds_button--white {
+            background: white;
+            color: var(--scot-gov-blue);
+            border: 2px solid var(--scot-gov-blue);
+        }
+
+        .ds_button--white:hover {
+            background: var(--scot-gov-light-blue);
+            color: var(--scot-gov-dark-blue);
+        }
+
+        .ds_button:hover {
+            background: var(--scot-gov-dark-blue);
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .user-status {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 32px;
+            padding: 24px;
+        }
+
+        .user-info {
+            margin-top: 24px;
+            padding: 24px;
+            background: var(--scot-gov-light-blue);
+            border: 1px solid var(--scot-gov-blue);
+            border-radius: 4px;
+        }
+
+        .user-info h3 {
+            color: var(--scot-gov-blue);
+            font-size: 20px;
+            margin-bottom: 16px;
+        }
+
+        .user-info dl {
+            margin: 0;
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 16px;
+            font-size: 16px;
+        }
+
+        .user-info dt {
+            font-weight: 600;
+            color: var(--scot-gov-text);
+        }
+
+        .user-info dd {
+            margin: 0;
+            font-weight: 400;
+        }
+
+        .verified-claims {
+            margin-top: 32px;
+            padding: 24px;
+            background: white;
+            border: 1px solid var(--scot-gov-border);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .verified-claims h3 {
+            color: var(--scot-gov-blue);
+            margin-bottom: 24px;
+            font-size: 24px;
+        }
+
+        .claim-section {
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--scot-gov-border);
+        }
+
+        .claim-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .claim-section h4 {
+            color: var(--scot-gov-blue);
+            font-size: 20px;
+            margin-bottom: 16px;
+        }
+
+        .verification-info {
+            background: var(--scot-gov-light-blue);
+            padding: 16px;
+            margin-bottom: 24px;
+            border-radius: 4px;
+            border: 1px solid var(--scot-gov-blue);
+        }
+
+        .verification-info strong {
+            color: var(--scot-gov-blue);
+            display: block;
+            margin-bottom: 12px;
+        }
+
+        .verification-info dl {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 12px;
+            margin: 0;
+        }
+
+        .verification-info dt {
+            font-weight: 600;
+            color: var(--scot-gov-text);
+        }
+
+        .verification-info dd {
+            margin: 0;
+            color: var(--scot-gov-text);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: baseline;
+            border-radius: 4px;
+            margin-left: 8px;
+            background-color: var(--scot-gov-success);
+            color: white;
+        }
+
+        .ds_site-footer {
+            background: white;
+            padding: 24px 0;
+            margin-top: 48px;
+            border-top: 1px solid var(--scot-gov-border);
+        }
+
+        .ds_site-footer__content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            text-align: center;
+            color: var(--scot-gov-text);
+        }
+
+        @media (max-width: 768px) {
+            .user-info dl,
+            .verification-info dl {
+                grid-template-columns: 1fr;
+            }
+            
+            .ds_wrapper {
+                padding: 0 16px;
+            }
+        }
+    </style>
+  </head>
+  <body>
+    <header class="ds_site-header">
+        <div class="ds_site-header__content">
+            <h1 class="ds_site-header__title">ScotAccount Client</h1>
+            <div class="ds_site-header__auth">
+                <p class="ds_site-header__user" sec:authorize="isAuthenticated()">
+                    Welcome, <span sec:authentication="principal.attributes['sub']"></span>
+                </p>
+            </div>
+        </div>
+    </header>
+
+    <main class="ds_layout__content">
+        <div class="ds_wrapper">
+            <div class="user-status">
+                <div sec:authorize="isAuthenticated()">
+                    <h2>Your Account Information</h2>
+                    <div class="user-info">
+                        <dl>
+                            <dt>User ID:</dt>
+                            <dd sec:text="${#authentication.principal.attributes['sub']}"></dd>
+                            <dt>Email:</dt>
+                            <dd>
+                                <span sec:text="${#authentication.principal.attributes['email']}"></span>
+                                <span th:if="${#authentication.principal.attributes['email_verified']}" 
+                                      class="badge">Verified</span>
+                            </dd>
+                            <dt>Name:</dt>
+                            <dd sec:text="${#authentication.principal.attributes['name']}"></dd>
+                        </dl>
+                    </div>
+
+                    <div class="verified-claims" th:if="${verifiedClaims != null and not #lists.isEmpty(verifiedClaims)}">
+                        <h3>Verified Claims</h3>
+                        <div class="claim-section" th:each="claim : ${verifiedClaims}">
+                            <h4 th:text="${claim != null ? claim.scope : 'Unknown Scope'}"></h4>
+                            
+                            <div class="verification-info" th:if="${claim != null and claim.verification != null}">
+                                <strong>Verification Details</strong>
+                                <dl>
+                                    <dt>Outcome:</dt>
+                                    <dd th:text="${claim.verification.outcome}">Not provided</dd>
+                                    <dt>Trust Framework:</dt>
+                                    <dd th:text="${claim.verification.trust_framework}">Not provided</dd>
+                                    <dt>Validation Method:</dt>
+                                    <dd th:text="${claim.verification.validation_method}">Not provided</dd>
+                                    <dt>Verification Time:</dt>
+                                    <dd th:text="${claim.verification.time}">Not provided</dd>
+                                    <dt>Verifier Organization:</dt>
+                                    <dd th:text="${claim.verification.verifier != null ? claim.verification.verifier.organization : 'Not provided'}">Not provided</dd>
+                                    <dt>Transaction ID:</dt>
+                                    <dd th:text="${claim.verification.verifier != null ? claim.verification.verifier.txn : 'Not provided'}">Not provided</dd>
+                                </dl>
+                            </div>
+
+                            <div th:if="${claim != null and claim.claims != null}">
+                                <!-- GPG45 Medium Claims -->
+                                <div th:if="${claim.scope == 'scotaccount.gpg45.medium'}">
+                                    <h5>Identity Information</h5>
+                                    <dl>
+                                        <dt>Given Name:</dt>
+                                        <dd th:text="${claim.claims.given_name}">Not provided</dd>
+                                        <dt>Family Name:</dt>
+                                        <dd th:text="${claim.claims.family_name}">Not provided</dd>
+                                        <dt>Birth Date:</dt>
+                                        <dd th:text="${claim.claims.birth_date}">Not provided</dd>
+                                    </dl>
+                                </div>
+                                
+                                <!-- Email Claims -->
+                                <div th:if="${claim.scope == 'scotaccount.email'}">
+                                    <h5>Email Information</h5>
+                                    <dl>
+                                        <dt>Email Address:</dt>
+                                        <dd th:text="${claim.claims.email}">Not provided</dd>
+                                    </dl>
+                                </div>
+                                
+                                <!-- Address Claims -->
+                                <div th:if="${claim.scope == 'scotaccount.address'}">
+                                    <h5>Address Information</h5>
+                                    <dl>
+                                        <div th:if="${claim.claims.address != null}">
+                                            <dt>UPRN:</dt>
+                                            <dd th:text="${claim.claims.address.get('uprn') != null ? claim.claims.address.get('uprn') : 'Not provided'}">Not provided</dd>
+                                            <dt>Organisation Name:</dt>
+                                            <dd th:text="${claim.claims.address.get('organisationName') != null ? claim.claims.address.get('organisationName') : 'Not provided'}">Not provided</dd>
+                                            <dt>Department Name:</dt>
+                                            <dd th:text="${claim.claims.address.get('departmentName') != null ? claim.claims.address.get('departmentName') : 'Not provided'}">Not provided</dd>
+                                            <dt>Sub-Building Name:</dt>
+                                            <dd th:text="${claim.claims.address.get('subBuildingName') != null ? claim.claims.address.get('subBuildingName') : 'Not provided'}">Not provided</dd>
+                                            <dt>Building Number:</dt>
+                                            <dd th:text="${claim.claims.address.get('buildingNumber') != null ? claim.claims.address.get('buildingNumber') : 'Not provided'}">Not provided</dd>
+                                            <dt>Building Name:</dt>
+                                            <dd th:text="${claim.claims.address.get('buildingName') != null ? claim.claims.address.get('buildingName') : 'Not provided'}">Not provided</dd>
+                                            <dt>Dependent Street Name:</dt>
+                                            <dd th:text="${claim.claims.address.get('dependentStreetName') != null ? claim.claims.address.get('dependentStreetName') : 'Not provided'}">Not provided</dd>
+                                            <dt>Street Name:</dt>
+                                            <dd th:text="${claim.claims.address.get('streetName') != null ? claim.claims.address.get('streetName') : 'Not provided'}">Not provided</dd>
+                                            <dt>Double Dependent Address Locality:</dt>
+                                            <dd th:text="${claim.claims.address.get('doubleDependentAddressLocality') != null ? claim.claims.address.get('doubleDependentAddressLocality') : 'Not provided'}">Not provided</dd>
+                                            <dt>Dependent Address Locality:</dt>
+                                            <dd th:text="${claim.claims.address.get('dependentAddressLocality') != null ? claim.claims.address.get('dependentAddressLocality') : 'Not provided'}">Not provided</dd>
+                                            <dt>Address Locality:</dt>
+                                            <dd th:text="${claim.claims.address.get('addressLocality') != null ? claim.claims.address.get('addressLocality') : 'Not provided'}">Not provided</dd>
+                                            <dt>Postal Code:</dt>
+                                            <dd th:text="${claim.claims.address.get('postalCode') != null ? claim.claims.address.get('postalCode') : 'Not provided'}">Not provided</dd>
+                                        </div>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form th:action="@{/logout}" method="post" style="margin-top: 32px;">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                        <button type="submit" class="ds_button ds_button--white">Logout</button>
+                    </form>
+                </div>
+                <div sec:authorize="!isAuthenticated()">
+                    <h2>Welcome to ScotAccount</h2>
+                    <p>Please log in to access your account information.</p>
+                    <a th:href="@{/oauth2/authorization/scotaccount}" class="ds_button">Login with ScotAccount</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="ds_site-footer">
+        <div class="ds_site-footer__content">
+            <p>Demo application for ScotAccount integration</p>
+        </div>
+    </footer>
+  </body>
+</html>
