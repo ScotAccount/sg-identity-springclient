@@ -15,9 +15,12 @@ participant "OAuth2AuthorizationCodeAuthenticationProvider" as authProvider
 participant "OAuth2AuthorizationCodeAuthenticationToken" as codeAuthToken
 participant "OAuth2AuthorizationResponse" as authResponse
 participant "HomeController" as homeCtrl #E0FFE0
-participant "LoggedInController" as loggedInCtrl #E0FFE0
+participant "LoginController" as loginCtrl #E0FFE0
+participant "VerificationController" as verifyCtrl #E0FFE0
+participant "LogoutController" as logoutCtrl #E0FFE0
 participant "Authorization Server" as authServer #E0F0FF
 participant "Token Endpoint" as tokenEndpoint #E0F0FF
+participant "Attributes Endpoint" as attrEndpoint #E0F0FF
 
 == Application Startup ==
 secConfig -> secConfig: configure(HttpSecurity)
@@ -51,7 +54,7 @@ end note
 requestResolver --> securityFilter: OAuth2AuthorizationRequest
 deactivate requestResolver
 
-securityFilter -> requestRepo: saveAuthorizationRequest(\nOAuth2AuthorizationRequest, \nHttpServletRequest, \nHttpServletResponse)
+securityFilter -> requestRepo: saveAuthorizationRequest()
 activate requestRepo
 requestRepo --> securityFilter: void
 deactivate requestRepo
@@ -63,114 +66,105 @@ deactivate securityFilter
 browser -> authServer: GET /authorize\nQuery params:\n- client_id=scotaccount\n- response_type=code\n- redirect_uri=.../login/oauth2/code/scotaccount\n- scope=openid\n- state=<state>\n- code_challenge=<challenge>\n- code_challenge_method=S256\n- nonce=<nonce>
 activate authServer
 authServer --> browser: Login & Consent UI
-browser -> authServer: POST credentials & consent\nContent-Type: application/x-www-form-urlencoded
+browser -> authServer: POST credentials & consent
 authServer --> browser: 302 Redirect\nLocation: .../login/oauth2/code/scotaccount?code=<auth_code>&state=<state>
 deactivate authServer
 
-== Authorization Code Processing & State Verification ==
-browser -> loginFilter: GET /login/oauth2/code/scotaccount\nQuery params:\n- code=<auth_code>\n- state=<state>\nCookie: JSESSIONID=<session_id>
+== Authorization Code Processing ==
+browser -> loginFilter: GET /login/oauth2/code/scotaccount
 activate loginFilter
+loginFilter -> loginCtrl: onAuthenticationSuccess()
+activate loginCtrl
 
-loginFilter -> authResponse: create(HttpServletRequest)
-activate authResponse
-authResponse -> authResponse: extractState()
-authResponse --> loginFilter: OAuth2AuthorizationResponse
-deactivate authResponse
-
-loginFilter -> requestRepo: loadAuthorizationRequest(HttpServletRequest)
-activate requestRepo
-note right
-  Retrieves from session:
-  - original state
-  - code_verifier
-  - nonce
-end note
-requestRepo --> loginFilter: OAuth2AuthorizationRequest
-deactivate requestRepo
-
-loginFilter -> loginFilter: validateState(\nOAuth2AuthorizationRequest,\nOAuth2AuthorizationResponse)
-note right of loginFilter
-  Verifies that:
-  1. State exists in response
-  2. State matches session stored state
-  3. State not expired
-end note
-
-loginFilter -> codeAuthToken: create(\nOAuth2AuthorizationRequest,\nOAuth2AuthorizationResponse)
-activate codeAuthToken
-codeAuthToken --> loginFilter: OAuth2AuthorizationCodeAuthenticationToken
-deactivate codeAuthToken
-
-loginFilter -> authProvider: authenticate(Authentication)
-activate authProvider
-authProvider -> authProvider: validateState()
-authProvider -> tokenEndpoint: POST /token\nContent-Type: application/x-www-form-urlencoded\nBody:\n- grant_type=authorization_code\n- code=<auth_code>\n- redirect_uri=.../login/oauth2/code/scotaccount\n- code_verifier=<verifier>
-activate tokenEndpoint
-tokenEndpoint --> authProvider: OAuth2AccessToken & ID Token
-deactivate tokenEndpoint
-authProvider --> loginFilter: Authentication
-deactivate authProvider
-
-loginFilter -> clientRepo: saveAuthorizedClient()
+loginCtrl -> clientRepo: loadAuthorizedClient()
 activate clientRepo
 note right
   Stores in session:
   - access_token
-  - refresh_token
   - id_token
+  - token_claims
 end note
-clientRepo --> loginFilter: void
+clientRepo --> loginCtrl: OAuth2AuthorizedClient
 deactivate clientRepo
 
-loginFilter -> authToken: new OAuth2AuthenticationToken()
-activate authToken
-authToken --> loginFilter: authentication
-deactivate authToken
-
-loginFilter -> securityFilter: SecurityContextHolder.setContext()
-loginFilter --> browser: 302 Redirect to /logged-in\nSet-Cookie: JSESSIONID=<session_id>
+loginCtrl --> browser: 302 Redirect to /
+deactivate loginCtrl
 deactivate loginFilter
 
-== Logged In Flow ==
-browser -> securityFilter: GET /logged-in\nCookie: JSESSIONID=<session_id>
+== Verification Flow ==
+browser -> securityFilter: POST /verify
 activate securityFilter
-securityFilter -> loggedInCtrl: handleLoggedIn()
-activate loggedInCtrl
+securityFilter -> verifyCtrl: initiateVerification()
+activate verifyCtrl
 
-loggedInCtrl -> clientRepo: loadAuthorizedClient()
-activate clientRepo
+verifyCtrl -> verifyCtrl: validateScopes()
 note right
-  Retrieves from session:
-  - access_token
-  - id_token
+  Validates requested scopes:
+  - scotaccount.address
+  - scotaccount.email
 end note
-clientRepo --> loggedInCtrl: OAuth2AuthorizedClient
-deactivate clientRepo
 
-loggedInCtrl -> loggedInCtrl: processTokens()\nstoreUserInfo()
-loggedInCtrl --> browser: Logged in view with user info\nSet-Cookie: JSESSIONID=<session_id>
-deactivate loggedInCtrl
+verifyCtrl -> verifyCtrl: storeVerificationScopes()
+note right
+  Stores in session:
+  - verification_scopes
+end note
+
+verifyCtrl --> browser: 302 Redirect to /oauth2/authorization/scotaccount
+deactivate verifyCtrl
 deactivate securityFilter
 
-== Protected Resource Access ==
-browser -> securityFilter: GET /protected-resource\nCookie: JSESSIONID=<session_id>
+== Attribute Verification ==
+browser -> securityFilter: GET /attributes
 activate securityFilter
-securityFilter -> secConfig: checkAuthentication()
-activate secConfig
-secConfig --> securityFilter: authorized
-deactivate secConfig
-securityFilter -> clientRepo: loadAuthorizedClient()
-activate clientRepo
+securityFilter -> verifyCtrl: fetchAttributes()
+activate verifyCtrl
+
+verifyCtrl -> attrEndpoint: GET /attributes/values
+activate attrEndpoint
+attrEndpoint --> verifyCtrl: User Attributes
+deactivate attrEndpoint
+
+verifyCtrl -> verifyCtrl: processAttributes()
 note right
-  Retrieves from session:
-  - access_token
+  Processes:
+  - email
+  - address
+  - other verified claims
 end note
-clientRepo --> securityFilter: OAuth2AuthorizedClient
-deactivate clientRepo
-securityFilter -> loggedInCtrl: handleProtectedRequest()
-activate loggedInCtrl
-loggedInCtrl --> browser: Protected Resource Content\nSet-Cookie: JSESSIONID=<session_id>
-deactivate loggedInCtrl
+
+verifyCtrl --> browser: Attributes Response
+deactivate verifyCtrl
 deactivate securityFilter
+
+== Logout Flow ==
+browser -> securityFilter: POST /logout
+activate securityFilter
+securityFilter -> logoutCtrl: logout()
+activate logoutCtrl
+
+logoutCtrl -> logoutCtrl: invalidateSession()
+note right
+  Cleans up:
+  - HTTP Session
+  - Security Context
+  - Cookies
+end note
+
+logoutCtrl --> browser: 302 Redirect to /
+deactivate logoutCtrl
+deactivate securityFilter
+
+== Error Handling ==
+alt Authentication Error
+    loginCtrl -> loginCtrl: onAuthenticationFailure()
+    loginCtrl --> browser: 302 Redirect to /?error=auth_error
+else Verification Error
+    verifyCtrl -> verifyCtrl: handleVerificationError()
+    verifyCtrl --> browser: 302 Redirect to /?error=verification_error
+else Logout Error
+    logoutCtrl -> logoutCtrl: handleLogoutError()
+    logoutCtrl --> browser: 302 Redirect to /?error=logout_error
+end
 
 @enduml 

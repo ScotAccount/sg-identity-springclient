@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
 
 /**
  * Utility class for handling JWT operations in the ScotAccount client
@@ -287,5 +288,34 @@ public class JwtUtil {
                 .build()
                 .parseClaimsJws(jwt)
                 .getBody();
+    }
+
+    /**
+     * Extracts the Authentication Method References (AMR) from JWT claims.
+     * 
+     * @param claims The JWT claims to extract AMR from
+     * @return A list of AMR entries, or an empty list if none are found
+     */
+    @SuppressWarnings("unchecked")
+    private List<Map<String, String>> extractAmr(Claims claims) {
+        if (claims == null) {
+            return Collections.emptyList();
+        }
+        Map<String, Object> claimsMap = claims.get("claims", Map.class);
+        if (claimsMap == null) {
+            return Collections.emptyList();
+        }
+        return (List<Map<String, String>>) claimsMap.get("amr");
+    }
+
+    /**
+     * Extracts verifier information from verification claims.
+     * 
+     * @param verification The verification claims map
+     * @return A map containing verifier details, or an empty map if none are found
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, String> extractVerifier(Map<String, Object> verification) {
+        return (Map<String, String>) verification.getOrDefault("verifier", Collections.emptyMap());
     }
 }

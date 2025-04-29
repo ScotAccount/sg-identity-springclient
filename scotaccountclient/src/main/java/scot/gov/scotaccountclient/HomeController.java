@@ -47,7 +47,6 @@ public class HomeController {
      * @param attributeService        service for retrieving user attributes from
      *                                ScotAccount
      */
-    @Autowired
     public HomeController(OAuth2AuthorizedClientService authorizedClientService, AttributeService attributeService) {
         this.authorizedClientService = authorizedClientService;
         this.attributeService = attributeService;

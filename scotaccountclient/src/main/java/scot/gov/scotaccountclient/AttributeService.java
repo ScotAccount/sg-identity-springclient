@@ -153,4 +153,27 @@ public class AttributeService {
             return null;
         }
     }
+
+    /**
+     * Extracts the address information from the claims map.
+     * 
+     * @param claims The claims map containing user information
+     * @return A map containing address details, or an empty map if none are found
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> extractAddressFromClaims(Map<String, Object> claims) {
+        return (Map<String, Object>) claims.getOrDefault("address", Collections.emptyMap());
+    }
+
+    /**
+     * Extracts the verification information from the claims map.
+     * 
+     * @param claims The claims map containing user information
+     * @return A map containing verification details, or an empty map if none are
+     *         found
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> extractVerificationFromClaims(Map<String, Object> claims) {
+        return (Map<String, Object>) claims.getOrDefault("verification", Collections.emptyMap());
+    }
 }

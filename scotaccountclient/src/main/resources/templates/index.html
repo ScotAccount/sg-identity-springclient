@@ -67,6 +67,18 @@
             margin: 0;
         }
 
+        .ds_button--header {
+            background: transparent;
+            color: white;
+            border: 1px solid white;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        .ds_button--header:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
         .ds_wrapper {
             max-width: 1200px;
             margin: 0 auto;
@@ -262,9 +274,10 @@
         <div class="ds_site-header__content">
             <h1 class="ds_site-header__title">ScotAccount Client</h1>
             <div class="ds_site-header__auth">
-                <p class="ds_site-header__user" sec:authorize="isAuthenticated()">
-                    Welcome, <span sec:authentication="principal.attributes['sub']"></span>
-                </p>
+                <form th:action="@{/logout}" method="post" sec:authorize="isAuthenticated()" style="margin: 0;">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                    <button type="submit" class="ds_button ds_button--header">Logout</button>
+                </form>
             </div>
         </div>
     </header>
@@ -277,37 +290,35 @@
                     <div class="user-info">
                         <dl>
                             <dt>User ID:</dt>
-                            <dd sec:text="${#authentication.principal.attributes['sub']}"></dd>
+                            <dd><span th:text="${#authentication.principal.attributes['sub']}">Not provided</span></dd>
                             <dt>Email:</dt>
                             <dd>
-                                <span sec:text="${#authentication.principal.attributes['email']}"></span>
+                                <span th:text="${#authentication.principal.attributes['email']}"></span>
                                 <span th:if="${#authentication.principal.attributes['email_verified']}" 
                                       class="badge">Verified</span>
                             </dd>
-                            <dt>Name:</dt>
-                            <dd sec:text="${#authentication.principal.attributes['name']}"></dd>
                         </dl>
                     </div>
 
-                    <div class="verified-claims" th:if="${verifiedClaims != null and not #lists.isEmpty(verifiedClaims)}">
+                    <div class="verified-claims" th:if="${verifiedClaims != null and not #lists.isEmpty(verifiedClaims)}" style="margin-top: 32px; padding: 24px; background: white; border: 1px solid var(--scot-gov-border); border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                         <h3>Verified Claims</h3>
                         <div class="claim-section" th:each="claim : ${verifiedClaims}">
                             <h4 th:text="${claim != null ? claim.scope : 'Unknown Scope'}"></h4>
                             
-                            <div class="verification-info" th:if="${claim != null and claim.verification != null}">
-                                <strong>Verification Details</strong>
-                                <dl>
-                                    <dt>Outcome:</dt>
+                            <div class="verification-info" th:if="${claim != null and claim.verification != null}" style="background: var(--scot-gov-light-blue); padding: 16px; margin-bottom: 24px; border-radius: 4px; border: 1px solid var(--scot-gov-blue);">
+                                <strong style="color: var(--scot-gov-blue); display: block; margin-bottom: 12px;">Verification Details</strong>
+                                <dl style="display: grid; grid-template-columns: 200px 1fr; gap: 12px; margin: 0;">
+                                    <dt style="font-weight: 600; color: var(--scot-gov-text);">Outcome:</dt>
                                     <dd th:text="${claim.verification.outcome}">Not provided</dd>
-                                    <dt>Trust Framework:</dt>
+                                    <dt style="font-weight: 600; color: var(--scot-gov-text);">Trust Framework:</dt>
                                     <dd th:text="${claim.verification.trust_framework}">Not provided</dd>
-                                    <dt>Validation Method:</dt>
+                                    <dt style="font-weight: 600; color: var(--scot-gov-text);">Validation Method:</dt>
                                     <dd th:text="${claim.verification.validation_method}">Not provided</dd>
-                                    <dt>Verification Time:</dt>
+                                    <dt style="font-weight: 600; color: var(--scot-gov-text);">Verification Time:</dt>
                                     <dd th:text="${claim.verification.time}">Not provided</dd>
-                                    <dt>Verifier Organization:</dt>
+                                    <dt style="font-weight: 600; color: var(--scot-gov-text);">Verifier Organization:</dt>
                                     <dd th:text="${claim.verification.verifier != null ? claim.verification.verifier.organization : 'Not provided'}">Not provided</dd>
-                                    <dt>Transaction ID:</dt>
+                                    <dt style="font-weight: 600; color: var(--scot-gov-text);">Transaction ID:</dt>
                                     <dd th:text="${claim.verification.verifier != null ? claim.verification.verifier.txn : 'Not provided'}">Not provided</dd>
                                 </dl>
                             </div>
@@ -315,54 +326,54 @@
                             <div th:if="${claim != null and claim.claims != null}">
                                 <!-- GPG45 Medium Claims -->
                                 <div th:if="${claim.scope == 'scotaccount.gpg45.medium'}">
-                                    <h5>Identity Information</h5>
-                                    <dl>
-                                        <dt>Given Name:</dt>
+                                    <h5 style="color: var(--scot-gov-blue); font-size: 18px; margin: 16px 0;">Identity Information</h5>
+                                    <dl style="display: grid; grid-template-columns: 200px 1fr; gap: 12px; margin: 0;">
+                                        <dt style="font-weight: 600; color: var(--scot-gov-text);">Given Name:</dt>
                                         <dd th:text="${claim.claims.given_name}">Not provided</dd>
-                                        <dt>Family Name:</dt>
+                                        <dt style="font-weight: 600; color: var(--scot-gov-text);">Family Name:</dt>
                                         <dd th:text="${claim.claims.family_name}">Not provided</dd>
-                                        <dt>Birth Date:</dt>
+                                        <dt style="font-weight: 600; color: var(--scot-gov-text);">Birth Date:</dt>
                                         <dd th:text="${claim.claims.birth_date}">Not provided</dd>
                                     </dl>
                                 </div>
                                 
                                 <!-- Email Claims -->
                                 <div th:if="${claim.scope == 'scotaccount.email'}">
-                                    <h5>Email Information</h5>
-                                    <dl>
-                                        <dt>Email Address:</dt>
+                                    <h5 style="color: var(--scot-gov-blue); font-size: 18px; margin: 16px 0;">Email Information</h5>
+                                    <dl style="display: grid; grid-template-columns: 200px 1fr; gap: 12px; margin: 0;">
+                                        <dt style="font-weight: 600; color: var(--scot-gov-text);">Email Address:</dt>
                                         <dd th:text="${claim.claims.email}">Not provided</dd>
                                     </dl>
                                 </div>
                                 
                                 <!-- Address Claims -->
                                 <div th:if="${claim.scope == 'scotaccount.address'}">
-                                    <h5>Address Information</h5>
-                                    <dl>
+                                    <h5 style="color: var(--scot-gov-blue); font-size: 18px; margin: 16px 0;">Address Information</h5>
+                                    <dl style="display: grid; grid-template-columns: 200px 1fr; gap: 12px; margin: 0;">
                                         <div th:if="${claim.claims.address != null}">
-                                            <dt>UPRN:</dt>
+                                            <dt style="font-weight: 600; color: var(--scot-gov-text);">UPRN:</dt>
                                             <dd th:text="${claim.claims.address.get('uprn') != null ? claim.claims.address.get('uprn') : 'Not provided'}">Not provided</dd>
-                                            <dt>Organisation Name:</dt>
+                                            <dt style="font-weight: 600; color: var(--scot-gov-text);">Organisation Name:</dt>
                                             <dd th:text="${claim.claims.address.get('organisationName') != null ? claim.claims.address.get('organisationName') : 'Not provided'}">Not provided</dd>
-                                            <dt>Department Name:</dt>
+                                            <dt style="font-weight: 600; color: var(--scot-gov-text);">Department Name:</dt>
                                             <dd th:text="${claim.claims.address.get('departmentName') != null ? claim.claims.address.get('departmentName') : 'Not provided'}">Not provided</dd>
-                                            <dt>Sub-Building Name:</dt>
+                                            <dt style="font-weight: 600; color: var(--scot-gov-text);">Sub-Building Name:</dt>
                                             <dd th:text="${claim.claims.address.get('subBuildingName') != null ? claim.claims.address.get('subBuildingName') : 'Not provided'}">Not provided</dd>
-                                            <dt>Building Number:</dt>
+                                            <dt style="font-weight: 600; color: var(--scot-gov-text);">Building Number:</dt>
                                             <dd th:text="${claim.claims.address.get('buildingNumber') != null ? claim.claims.address.get('buildingNumber') : 'Not provided'}">Not provided</dd>
-                                            <dt>Building Name:</dt>
+                                            <dt style="font-weight: 600; color: var(--scot-gov-text);">Building Name:</dt>
                                             <dd th:text="${claim.claims.address.get('buildingName') != null ? claim.claims.address.get('buildingName') : 'Not provided'}">Not provided</dd>
-                                            <dt>Dependent Street Name:</dt>
+                                            <dt style="font-weight: 600; color: var(--scot-gov-text);">Dependent Street Name:</dt>
                                             <dd th:text="${claim.claims.address.get('dependentStreetName') != null ? claim.claims.address.get('dependentStreetName') : 'Not provided'}">Not provided</dd>
-                                            <dt>Street Name:</dt>
+                                            <dt style="font-weight: 600; color: var(--scot-gov-text);">Street Name:</dt>
                                             <dd th:text="${claim.claims.address.get('streetName') != null ? claim.claims.address.get('streetName') : 'Not provided'}">Not provided</dd>
-                                            <dt>Double Dependent Address Locality:</dt>
+                                            <dt style="font-weight: 600; color: var(--scot-gov-text);">Double Dependent Address Locality:</dt>
                                             <dd th:text="${claim.claims.address.get('doubleDependentAddressLocality') != null ? claim.claims.address.get('doubleDependentAddressLocality') : 'Not provided'}">Not provided</dd>
-                                            <dt>Dependent Address Locality:</dt>
+                                            <dt style="font-weight: 600; color: var(--scot-gov-text);">Dependent Address Locality:</dt>
                                             <dd th:text="${claim.claims.address.get('dependentAddressLocality') != null ? claim.claims.address.get('dependentAddressLocality') : 'Not provided'}">Not provided</dd>
-                                            <dt>Address Locality:</dt>
+                                            <dt style="font-weight: 600; color: var(--scot-gov-text);">Address Locality:</dt>
                                             <dd th:text="${claim.claims.address.get('addressLocality') != null ? claim.claims.address.get('addressLocality') : 'Not provided'}">Not provided</dd>
-                                            <dt>Postal Code:</dt>
+                                            <dt style="font-weight: 600; color: var(--scot-gov-text);">Postal Code:</dt>
                                             <dd th:text="${claim.claims.address.get('postalCode') != null ? claim.claims.address.get('postalCode') : 'Not provided'}">Not provided</dd>
                                         </div>
                                     </dl>
@@ -371,10 +382,28 @@
                         </div>
                     </div>
 
-                    <form th:action="@{/logout}" method="post" style="margin-top: 32px;">
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                        <button type="submit" class="ds_button ds_button--white">Logout</button>
-                    </form>
+                    <div class="verification-section" style="margin-top: 48px;">
+                        <h3>Request Additional Verification</h3>
+                        <div th:if="${error != null}" class="error-message" style="color: red; margin-bottom: 16px;">
+                            <p th:text="${error}"></p>
+                        </div>
+                        <form action="/verify" method="post">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                            <div class="verification-option">
+                                <input type="checkbox" id="idv" name="scopes" value="scotaccount.gpg45.medium">
+                                <label for="idv">Identity Verification (GP45 Medium)</label>
+                            </div>
+                            <div class="verification-option">
+                                <input type="checkbox" id="address" name="scopes" value="scotaccount.address">
+                                <label for="address">Address Verification</label>
+                            </div>
+                            <div class="verification-option">
+                                <input type="checkbox" id="email" name="scopes" value="scotaccount.email">
+                                <label for="email">Email Verification</label>
+                            </div>
+                            <button type="submit" class="ds_button ds_button--white">Request Verification</button>
+                        </form>
+                    </div>
                 </div>
                 <div sec:authorize="!isAuthenticated()">
                     <h2>Welcome to ScotAccount</h2>
