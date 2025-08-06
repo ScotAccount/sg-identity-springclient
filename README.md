@@ -1,6 +1,6 @@
 # ScotAccount Client Application
 
-A Spring Boot application demonstrating secure integration with ScotAccount's OAuth2/OIDC authentication service for Scottish Government digital services.
+A Spring Boot application demonstrating secure integration with ScotAccount's OIDC authentication service for Scottish Government digital services.
 
 ## Overview
 
